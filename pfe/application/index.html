@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=\, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <link 
+            rel="stylesheet" 
+            href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+            integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+            crossorigin=""/>
+        <script 
+            src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
+            integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+            crossorigin=""></script>
+        <style>
+            #mapid { 
+                height: 1000px;
+            }
+        </style>
+    </head> 
+    <body>
+
+        <div id="mapid"></div>
+        <script>
+
+            // creation de la map
+            const mymap = L.map('mapid').setView([51.505, -0.09], 13);
+            
+            // creation des tiles spécifique à open street map
+            const tileUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            const attribution='Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors';
+
+            // definition de l'url du service REST
+            const apiUrl = "http://localhost:5000/get_data"
+
+            // attribution des tiles à la map créée
+            L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', 
+                        {
+	                        attribution: 'Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
+                        }).addTo(mymap);
+            
+            // consommation de l'api
+            // creation d'une fonction asynchrone pour aquérir les données du serveur
+            async function getData() {
+
+                // obtention de la reponse du serveur
+                const response = await fetch(apiUrl);
+                
+                // Parser la reponse en format JSON
+                const data = await response.json();
+                
+                // affichage des données contenues dans la réponse du serveur
+                console.log(data)
+
+                // creation d'un marqueur selon la latitude et la longitude recues dans la réponse
+                var marker = L.marker([data.lat, data.long]).addTo(mymap);
+
+                // creation d'un pop up afin de donner des information de la qualité de l'air
+                // où le marqueur est placé
+                marker.bindPopup("<b>Qualité d'air: </b>"+data.level+"<br><b>Implications pour la santé: </b>"+data.health_implication).openPopup();
+
+                // creation d'un cercle coloré selon la qualité d'air afin d'illustrer la zone autour
+                // du marqueur
+                var circle = L.circle([data.lat, data.long], {
+                                                    color: data.color,
+                                                    fillColor: data.color,
+                                                    fillOpacity: 0.5,
+                                                    radius: 100
+                                                }).addTo(mymap);
+                mymap.setView([data.lat, data.long], 17);
+                
+
+            }
+
+            // appel de la fonction définie plus haut
+            getData();
+
+        </script>
+    </body>
+</html>
